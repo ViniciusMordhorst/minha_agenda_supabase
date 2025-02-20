@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:minha_agenda_supabase/repository/usuario_repository.dart';
 import 'package:minha_agenda_supabase/route_generator.dart';
 import 'package:minha_agenda_supabase/telas/login.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,7 +27,7 @@ Future <void> main() async {
     ],
     theme: ThemeData(useMaterial3: true),
     onGenerateRoute: RouteGenerator.generateRoute,
-    initialRoute: "/login",
+    initialRoute: UsuarioRepository().isLogado() ? "/" : "/login",
     debugShowCheckedModeBanner: false,
   ));
 }

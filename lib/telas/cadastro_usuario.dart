@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:minha_agenda_supabase/model/usuario.dart';
+import 'package:minha_agenda_supabase/repository/usuario_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CadastroUsuario extends StatefulWidget {
   const CadastroUsuario({super.key});
@@ -14,6 +17,55 @@ class _CadastroUsuarioState extends State<CadastroUsuario> {
   final TextEditingController _csenhaController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _mostrarSenha = false;
+  bool _isEmailUso = false;
+  bool _isSenhaFraca = false;
+  bool _loading = false;
+
+  Future<void> _salvarUsuario() async {
+    setState(() {
+      _loading = true;
+    });
+  final bool isValid = _formKey.currentState?.validate() ?? false;
+  final navigator = Navigator.of(context);
+  if (isValid) {
+    try{
+      final AuthResponse usuarioAutenticado = await UsuarioRepository().criarUsuario(
+        Usuario(_nomeController.text,
+         _emailController.text,
+          _senhaController.text
+          ),
+        );
+        if (usuarioAutenticado.session != null) {
+          navigator.pushReplacementNamed("/");
+
+        }
+    } on AuthException catch (e) {
+      switch (e.code) {
+        case 'user_alredy_exists': 
+          setState(() {
+            _isEmailUso = true;
+          });
+        break;
+        case 'weak_password': 
+          setState(() {
+            _isSenhaFraca = true;
+          });
+        break;
+        default:
+        setState(() {
+          _isEmailUso = false;
+          _isSenhaFraca = false;
+        });
+      }
+    }
+  }
+       setState(() {
+      _loading = false;
+    });
+
+
+  } 
+
 
   @override
   void dispose() {
@@ -29,7 +81,9 @@ class _CadastroUsuarioState extends State<CadastroUsuario> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.lightGreen[200],
-      body: Center(
+      body: Stack(children: [
+        Center(
+
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
           child: Form(
@@ -104,6 +158,7 @@ class _CadastroUsuarioState extends State<CadastroUsuario> {
                         color: Colors.lightGreen,
                       ),
                     ),
+                    errorText: _isEmailUso ? 'O e-mail já está em uso!' : null,
                   ),
                   style: TextStyle(
                     color: Colors.lightGreen[900],
@@ -156,6 +211,7 @@ class _CadastroUsuarioState extends State<CadastroUsuario> {
                         color: Colors.lightGreen,
                       ),
                     ),
+                    errorText: _isSenhaFraca ? 'Senha informada é fraca' : null,
                   ),
                   style: TextStyle(
                     color: Colors.lightGreen[900],
@@ -228,7 +284,7 @@ class _CadastroUsuarioState extends State<CadastroUsuario> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () => _salvarUsuario(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.lightGreen[700],
                         foregroundColor: Colors.white,
@@ -237,16 +293,31 @@ class _CadastroUsuarioState extends State<CadastroUsuario> {
                         "Criar conta",
                         style: TextStyle(
                           fontSize: 18,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
-    );
+        if(_loading)
+        Container(
+          height: double.infinity,
+          color: Colors.black.withOpacity(0.5),
+          child: Center(
+            child: CircularProgressIndicator(
+              color: Colors.limeAccent[400],
+              strokeWidth: 10,
+
+            ),
+          ),
+
+        ),
+      ],
+    ),
+  );
   }
 }
